@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+{% block title %}Записи ДДС{% endblock %}
+{% block nav_records %}active{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Записи о движении денежных средств</h4>
+    <button class="btn btn-success" onclick="openRecordModal()">
+        <i class="bi bi-plus-lg"></i> Новая запись
+    </button>
+</div>
+
+<!-- Фильтры -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <div class="row g-2 filter-row align-items-end">
+            <div class="col-md-2">
+                <label class="form-label mb-0 small">Дата с</label>
+                <input type="date" class="form-control form-control-sm" id="filterDateFrom">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label mb-0 small">Дата по</label>
+                <input type="date" class="form-control form-control-sm" id="filterDateTo">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label mb-0 small">Статус</label>
+                <select class="form-select form-select-sm" id="filterStatus">
+                    <option value="">Все</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label mb-0 small">Тип</label>
+                <select class="form-select form-select-sm" id="filterType">
+                    <option value="">Все</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label mb-0 small">Категория</label>
+                <select class="form-select form-select-sm" id="filterCategory">
+                    <option value="">Все</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label mb-0 small">Подкатегория</label>
+                <select class="form-select form-select-sm" id="filterSubcategory">
+                    <option value="">Все</option>
+                </select>
+            </div>
+        </div>
+        <div class="mt-2 text-end">
+            <button class="btn btn-sm btn-outline-secondary" onclick="resetFilters()">Сбросить</button>
+            <button class="btn btn-sm btn-primary" onclick="loadRecords()">Применить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Таблица -->
+<div class="table-responsive">
+    <table class="table table-striped table-hover table-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>Дата</th>
+                <th>Статус</th>
+                <th>Тип</th>
+                <th>Категория</th>
+                <th>Подкатегория</th>
+                <th class="text-end">Сумма</th>
+                <th>Комментарий</th>
+                <th class="text-center" style="width:100px">Действия</th>
+            </tr>
+        </thead>
+        <tbody id="recordsTable">
+            <tr><td colspan="8" class="text-center text-muted">Загрузка...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Модалка создания/редактирования -->
+<div class="modal fade" id="recordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recordModalTitle">Новая запись</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="recordId">
+                <div class="mb-3">
+                    <label class="form-label">Дата <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="recordDate" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Статус <span class="text-danger">*</span></label>
+                    <select class="form-select" id="recordStatus" required>
+                        <option value="">-- Выберите --</option>
+                    </select>
+                    <div class="invalid-feedback">Выберите статус</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Тип <span class="text-danger">*</span></label>
+                    <select class="form-select" id="recordType" required>
+                        <option value="">-- Выберите --</option>
+                    </select>
+                    <div class="invalid-feedback">Выберите тип</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Категория <span class="text-danger">*</span></label>
+                    <select class="form-select" id="recordCategory" required>
+                        <option value="">-- Сначала выберите тип --</option>
+                    </select>
+                    <div class="invalid-feedback">Выберите категорию</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Подкатегория <span class="text-danger">*</span></label>
+                    <select class="form-select" id="recordSubcategory" required>
+                        <option value="">-- Сначала выберите категорию --</option>
+                    </select>
+                    <div class="invalid-feedback">Выберите подкатегорию</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Сумма (руб.) <span class="text-danger">*</span></label>
+                    <input type="number" step="0.01" min="0.01" class="form-control" id="recordAmount" required>
+                    <div class="invalid-feedback">Введите сумму больше 0</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Комментарий</label>
+                    <textarea class="form-control" id="recordComment" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="saveRecord()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка подтверждения удаления -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Удаление</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">Удалить эту запись?</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn">Удалить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const API = '/api';
+let allStatuses = [], allTypes = [], allCategories = [], allSubcategories = [];
+
+// ---- Утилиты ----
+
+async function api(url, opts = {}) {
+    const res = await fetch(url, {
+        headers: { 'Content-Type': 'application/json', ...opts.headers },
+        ...opts,
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw err;
+    }
+    if (res.status === 204) return null;
+    return res.json();
+}
+
+function formatDate(d) {
+    if (!d) return '';
+    const [y, m, day] = d.split('-');
+    return `${day}.${m}.${y}`;
+}
+
+function formatAmount(a) {
+    return Number(a).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) + ' \u20bd';
+}
+
+// ---- Загрузка справочников ----
+
+async function loadRefs() {
+    [allStatuses, allTypes, allCategories, allSubcategories] = await Promise.all([
+        api(`${API}/statuses/`),
+        api(`${API}/types/`),
+        api(`${API}/categories/`),
+        api(`${API}/subcategories/`),
+    ]);
+    populateFilterSelects();
+}
+
+function populateFilterSelects() {
+    fillSelect('filterStatus', allStatuses, '');
+    fillSelect('filterType', allTypes, '');
+    fillSelect('filterCategory', allCategories, '');
+    fillSelect('filterSubcategory', allSubcategories, '');
+}
+
+function fillSelect(id, items, placeholder, selectedId = '') {
+    const sel = document.getElementById(id);
+    const ph = placeholder !== undefined ? placeholder : '-- Выберите --';
+    sel.innerHTML = `<option value="">${ph || 'Все'}</option>` +
+        items.map(i => `<option value="${i.id}" ${i.id == selectedId ? 'selected' : ''}>${i.name}</option>`).join('');
+}
+
+// ---- Загрузка записей ----
+
+async function loadRecords() {
+    const params = new URLSearchParams();
+    const df = document.getElementById('filterDateFrom').value;
+    const dt = document.getElementById('filterDateTo').value;
+    const st = document.getElementById('filterStatus').value;
+    const tp = document.getElementById('filterType').value;
+    const cat = document.getElementById('filterCategory').value;
+    const sub = document.getElementById('filterSubcategory').value;
+    if (df) params.set('date_from', df);
+    if (dt) params.set('date_to', dt);
+    if (st) params.set('status', st);
+    if (tp) params.set('type', tp);
+    if (cat) params.set('category', cat);
+    if (sub) params.set('subcategory', sub);
+
+    const records = await api(`${API}/records/?${params}`);
+    const tbody = document.getElementById('recordsTable');
+    if (!records.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Нет записей</td></tr>';
+        return;
+    }
+    tbody.innerHTML = records.map(r => `
+        <tr>
+            <td>${formatDate(r.date)}</td>
+            <td>${r.status_name}</td>
+            <td>${r.type_name}</td>
+            <td>${r.category_name}</td>
+            <td>${r.subcategory_name}</td>
+            <td class="text-end">${formatAmount(r.amount)}</td>
+            <td>${r.comment || ''}</td>
+            <td class="text-center">
+                <button class="btn btn-outline-primary btn-action" title="Редактировать"
+                    onclick="editRecord(${r.id})"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-outline-danger btn-action" title="Удалить"
+                    onclick="confirmDelete(${r.id})"><i class="bi bi-trash"></i></button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function resetFilters() {
+    document.getElementById('filterDateFrom').value = '';
+    document.getElementById('filterDateTo').value = '';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterType').value = '';
+    document.getElementById('filterCategory').value = '';
+    document.getElementById('filterSubcategory').value = '';
+    loadRecords();
+}
+
+// ---- Модалка создания / редактирования ----
+
+function openRecordModal(record = null) {
+    document.getElementById('recordId').value = record ? record.id : '';
+    document.getElementById('recordModalTitle').textContent = record ? 'Редактирование записи' : 'Новая запись';
+    document.getElementById('recordDate').value = record ? record.date : new Date().toISOString().slice(0, 10);
+    document.getElementById('recordAmount').value = record ? record.amount : '';
+    document.getElementById('recordComment').value = record ? record.comment : '';
+
+    // Заполняем селекты
+    fillSelect('recordStatus', allStatuses, '-- Выберите --', record ? record.status : '');
+    fillSelect('recordType', allTypes, '-- Выберите --', record ? record.type : '');
+
+    // Категории по типу
+    const typeId = record ? record.type : '';
+    const cats = typeId ? allCategories.filter(c => c.type == typeId) : [];
+    fillSelect('recordCategory', cats, typeId ? '-- Выберите --' : '-- Сначала выберите тип --', record ? record.category : '');
+
+    // Подкатегории по категории
+    const catId = record ? record.category : '';
+    const subs = catId ? allSubcategories.filter(s => s.category == catId) : [];
+    fillSelect('recordSubcategory', subs, catId ? '-- Выберите --' : '-- Сначала выберите категорию --', record ? record.subcategory : '');
+
+    // Убираем валидацию
+    document.querySelectorAll('#recordModal .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+    new bootstrap.Modal(document.getElementById('recordModal')).show();
+}
+
+// Динамическая фильтрация: тип -> категории
+document.getElementById('recordType').addEventListener('change', function () {
+    const typeId = this.value;
+    const cats = typeId ? allCategories.filter(c => c.type == typeId) : [];
+    fillSelect('recordCategory', cats, typeId ? '-- Выберите --' : '-- Сначала выберите тип --');
+    fillSelect('recordSubcategory', [], '-- Сначала выберите категорию --');
+});
+
+// Динамическая фильтрация: категория -> подкатегории
+document.getElementById('recordCategory').addEventListener('change', function () {
+    const catId = this.value;
+    const subs = catId ? allSubcategories.filter(s => s.category == catId) : [];
+    fillSelect('recordSubcategory', subs, catId ? '-- Выберите --' : '-- Сначала выберите категорию --');
+});
+
+async function editRecord(id) {
+    const record = await api(`${API}/records/${id}/`);
+    openRecordModal(record);
+}
+
+async function saveRecord() {
+    const id = document.getElementById('recordId').value;
+    const data = {
+        date: document.getElementById('recordDate').value,
+        status: document.getElementById('recordStatus').value,
+        type: document.getElementById('recordType').value,
+        category: document.getElementById('recordCategory').value,
+        subcategory: document.getElementById('recordSubcategory').value,
+        amount: document.getElementById('recordAmount').value,
+        comment: document.getElementById('recordComment').value,
+    };
+
+    // Клиентская валидация
+    let valid = true;
+    ['recordStatus', 'recordType', 'recordCategory', 'recordSubcategory', 'recordAmount', 'recordDate'].forEach(fid => {
+        const el = document.getElementById(fid);
+        if (!el.value) { el.classList.add('is-invalid'); valid = false; }
+        else el.classList.remove('is-invalid');
+    });
+    if (data.amount && parseFloat(data.amount) <= 0) {
+        document.getElementById('recordAmount').classList.add('is-invalid');
+        valid = false;
+    }
+    if (!valid) return;
+
+    try {
+        if (id) {
+            await api(`${API}/records/${id}/`, { method: 'PUT', body: JSON.stringify(data) });
+        } else {
+            await api(`${API}/records/`, { method: 'POST', body: JSON.stringify(data) });
+        }
+        bootstrap.Modal.getInstance(document.getElementById('recordModal')).hide();
+        loadRecords();
+    } catch (err) {
+        let msg = 'Ошибка сохранения';
+        if (typeof err === 'object') {
+            msg = Object.values(err).flat().join('\n');
+        }
+        alert(msg);
+    }
+}
+
+// ---- Удаление ----
+
+function confirmDelete(id) {
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    document.getElementById('confirmDeleteBtn').onclick = async () => {
+        await api(`${API}/records/${id}/`, { method: 'DELETE' });
+        modal.hide();
+        loadRecords();
+    };
+    modal.show();
+}
+
+// ---- Инициализация ----
+
+loadRefs().then(() => loadRecords());
+</script>
+{% endblock %}

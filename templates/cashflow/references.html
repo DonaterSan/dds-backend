@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+{% block title %}Справочники{% endblock %}
+{% block nav_refs %}active{% endblock %}
+
+{% block content %}
+<h4 class="mb-3">Управление справочниками</h4>
+
+<div class="row">
+    <!-- Статусы -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Статусы</strong>
+                <button class="btn btn-success btn-sm" onclick="addItem('statuses')"><i class="bi bi-plus"></i></button>
+            </div>
+            <ul class="list-group list-group-flush" id="list-statuses"></ul>
+        </div>
+    </div>
+
+    <!-- Типы -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Типы</strong>
+                <button class="btn btn-success btn-sm" onclick="addItem('types')"><i class="bi bi-plus"></i></button>
+            </div>
+            <ul class="list-group list-group-flush" id="list-types"></ul>
+        </div>
+    </div>
+
+    <!-- Категории -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Категории</strong>
+                <button class="btn btn-success btn-sm" onclick="addCategory()"><i class="bi bi-plus"></i></button>
+            </div>
+            <ul class="list-group list-group-flush" id="list-categories"></ul>
+        </div>
+    </div>
+
+    <!-- Подкатегории -->
+    <div class="col-md-6 col-lg-3 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Подкатегории</strong>
+                <button class="btn btn-success btn-sm" onclick="addSubcategory()"><i class="bi bi-plus"></i></button>
+            </div>
+            <ul class="list-group list-group-flush" id="list-subcategories"></ul>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка для простых справочников (статус/тип) -->
+<div class="modal fade" id="simpleModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="simpleModalTitle">Добавить</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="simpleId">
+                <input type="hidden" id="simpleEndpoint">
+                <div class="mb-3">
+                    <label class="form-label">Название</label>
+                    <input type="text" class="form-control" id="simpleName" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn btn-primary btn-sm" onclick="saveSimple()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка для категории -->
+<div class="modal fade" id="categoryModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="categoryModalTitle">Категория</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="catId">
+                <div class="mb-3">
+                    <label class="form-label">Название</label>
+                    <input type="text" class="form-control" id="catName" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Тип</label>
+                    <select class="form-select" id="catType" required></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn btn-primary btn-sm" onclick="saveCategory()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка для подкатегории -->
+<div class="modal fade" id="subcategoryModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="subcategoryModalTitle">Подкатегория</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="subId">
+                <div class="mb-3">
+                    <label class="form-label">Название</label>
+                    <input type="text" class="form-control" id="subName" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Категория</label>
+                    <select class="form-select" id="subCategory" required></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn btn-primary btn-sm" onclick="saveSubcategory()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка удаления -->
+<div class="modal fade" id="refDeleteModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Удаление</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">Удалить этот элемент? Если он используется в записях, удаление будет невозможно.</div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn btn-danger btn-sm" id="refConfirmDeleteBtn">Удалить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const API = '/api';
+let types = [], categories = [], subcategories = [];
+
+async function api(url, opts = {}) {
+    const res = await fetch(url, {
+        headers: { 'Content-Type': 'application/json', ...opts.headers },
+        ...opts,
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw err;
+    }
+    if (res.status === 204) return null;
+    return res.json();
+}
+
+// ---- Загрузка и рендер списков ----
+
+async function loadAll() {
+    const [statuses, t, c, s] = await Promise.all([
+        api(`${API}/statuses/`),
+        api(`${API}/types/`),
+        api(`${API}/categories/`),
+        api(`${API}/subcategories/`),
+    ]);
+    types = t; categories = c; subcategories = s;
+
+    renderSimpleList('list-statuses', statuses, 'statuses');
+    renderSimpleList('list-types', types, 'types');
+    renderCategories();
+    renderSubcategories();
+}
+
+function renderSimpleList(containerId, items, endpoint) {
+    const ul = document.getElementById(containerId);
+    if (!items.length) {
+        ul.innerHTML = '<li class="list-group-item text-muted small">Пусто</li>';
+        return;
+    }
+    ul.innerHTML = items.map(i => `
+        <li class="list-group-item d-flex justify-content-between align-items-center py-1">
+            <span>${i.name}</span>
+            <span>
+                <button class="btn btn-sm btn-outline-primary btn-action" onclick="editItem('${endpoint}', ${i.id}, '${i.name.replace(/'/g, "\\'")}')"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteRef('${endpoint}', ${i.id})"><i class="bi bi-trash"></i></button>
+            </span>
+        </li>
+    `).join('');
+}
+
+function renderCategories() {
+    const ul = document.getElementById('list-categories');
+    if (!categories.length) {
+        ul.innerHTML = '<li class="list-group-item text-muted small">Пусто</li>';
+        return;
+    }
+    ul.innerHTML = categories.map(c => `
+        <li class="list-group-item d-flex justify-content-between align-items-center py-1">
+            <span>${c.name} <small class="text-muted">(${c.type_name})</small></span>
+            <span>
+                <button class="btn btn-sm btn-outline-primary btn-action" onclick="editCategory(${c.id})"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteRef('categories', ${c.id})"><i class="bi bi-trash"></i></button>
+            </span>
+        </li>
+    `).join('');
+}
+
+function renderSubcategories() {
+    const ul = document.getElementById('list-subcategories');
+    if (!subcategories.length) {
+        ul.innerHTML = '<li class="list-group-item text-muted small">Пусто</li>';
+        return;
+    }
+    ul.innerHTML = subcategories.map(s => `
+        <li class="list-group-item d-flex justify-content-between align-items-center py-1">
+            <span>${s.name} <small class="text-muted">(${s.category_name})</small></span>
+            <span>
+                <button class="btn btn-sm btn-outline-primary btn-action" onclick="editSubcategory(${s.id})"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteRef('subcategories', ${s.id})"><i class="bi bi-trash"></i></button>
+            </span>
+        </li>
+    `).join('');
+}
+
+// ---- Простые справочники (статус / тип) ----
+
+function addItem(endpoint) {
+    document.getElementById('simpleId').value = '';
+    document.getElementById('simpleEndpoint').value = endpoint;
+    document.getElementById('simpleName').value = '';
+    document.getElementById('simpleModalTitle').textContent =
+        endpoint === 'statuses' ? 'Новый статус' : 'Новый тип';
+    new bootstrap.Modal(document.getElementById('simpleModal')).show();
+}
+
+function editItem(endpoint, id, name) {
+    document.getElementById('simpleId').value = id;
+    document.getElementById('simpleEndpoint').value = endpoint;
+    document.getElementById('simpleName').value = name;
+    document.getElementById('simpleModalTitle').textContent = 'Редактирование';
+    new bootstrap.Modal(document.getElementById('simpleModal')).show();
+}
+
+async function saveSimple() {
+    const id = document.getElementById('simpleId').value;
+    const endpoint = document.getElementById('simpleEndpoint').value;
+    const name = document.getElementById('simpleName').value.trim();
+    if (!name) return;
+
+    try {
+        if (id) {
+            await api(`${API}/${endpoint}/${id}/`, { method: 'PUT', body: JSON.stringify({ name }) });
+        } else {
+            await api(`${API}/${endpoint}/`, { method: 'POST', body: JSON.stringify({ name }) });
+        }
+        bootstrap.Modal.getInstance(document.getElementById('simpleModal')).hide();
+        loadAll();
+    } catch (err) {
+        alert(Object.values(err).flat().join('\n'));
+    }
+}
+
+// ---- Категории ----
+
+function addCategory() {
+    document.getElementById('catId').value = '';
+    document.getElementById('catName').value = '';
+    document.getElementById('categoryModalTitle').textContent = 'Новая категория';
+    fillTypeSelect('catType');
+    new bootstrap.Modal(document.getElementById('categoryModal')).show();
+}
+
+function editCategory(id) {
+    const cat = categories.find(c => c.id === id);
+    document.getElementById('catId').value = id;
+    document.getElementById('catName').value = cat.name;
+    document.getElementById('categoryModalTitle').textContent = 'Редактирование категории';
+    fillTypeSelect('catType', cat.type);
+    new bootstrap.Modal(document.getElementById('categoryModal')).show();
+}
+
+function fillTypeSelect(selId, selectedId = '') {
+    const sel = document.getElementById(selId);
+    sel.innerHTML = types.map(t =>
+        `<option value="${t.id}" ${t.id == selectedId ? 'selected' : ''}>${t.name}</option>`
+    ).join('');
+}
+
+async function saveCategory() {
+    const id = document.getElementById('catId').value;
+    const data = {
+        name: document.getElementById('catName').value.trim(),
+        type: document.getElementById('catType').value,
+    };
+    if (!data.name || !data.type) return;
+
+    try {
+        if (id) {
+            await api(`${API}/categories/${id}/`, { method: 'PUT', body: JSON.stringify(data) });
+        } else {
+            await api(`${API}/categories/`, { method: 'POST', body: JSON.stringify(data) });
+        }
+        bootstrap.Modal.getInstance(document.getElementById('categoryModal')).hide();
+        loadAll();
+    } catch (err) {
+        alert(Object.values(err).flat().join('\n'));
+    }
+}
+
+// ---- Подкатегории ----
+
+function addSubcategory() {
+    document.getElementById('subId').value = '';
+    document.getElementById('subName').value = '';
+    document.getElementById('subcategoryModalTitle').textContent = 'Новая подкатегория';
+    fillCategorySelect('subCategory');
+    new bootstrap.Modal(document.getElementById('subcategoryModal')).show();
+}
+
+function editSubcategory(id) {
+    const sub = subcategories.find(s => s.id === id);
+    document.getElementById('subId').value = id;
+    document.getElementById('subName').value = sub.name;
+    document.getElementById('subcategoryModalTitle').textContent = 'Редактирование подкатегории';
+    fillCategorySelect('subCategory', sub.category);
+    new bootstrap.Modal(document.getElementById('subcategoryModal')).show();
+}
+
+function fillCategorySelect(selId, selectedId = '') {
+    const sel = document.getElementById(selId);
+    sel.innerHTML = categories.map(c =>
+        `<option value="${c.id}" ${c.id == selectedId ? 'selected' : ''}>${c.name} (${c.type_name})</option>`
+    ).join('');
+}
+
+async function saveSubcategory() {
+    const id = document.getElementById('subId').value;
+    const data = {
+        name: document.getElementById('subName').value.trim(),
+        category: document.getElementById('subCategory').value,
+    };
+    if (!data.name || !data.category) return;
+
+    try {
+        if (id) {
+            await api(`${API}/subcategories/${id}/`, { method: 'PUT', body: JSON.stringify(data) });
+        } else {
+            await api(`${API}/subcategories/`, { method: 'POST', body: JSON.stringify(data) });
+        }
+        bootstrap.Modal.getInstance(document.getElementById('subcategoryModal')).hide();
+        loadAll();
+    } catch (err) {
+        alert(Object.values(err).flat().join('\n'));
+    }
+}
+
+// ---- Удаление ----
+
+function deleteRef(endpoint, id) {
+    const modal = new bootstrap.Modal(document.getElementById('refDeleteModal'));
+    document.getElementById('refConfirmDeleteBtn').onclick = async () => {
+        try {
+            await api(`${API}/${endpoint}/${id}/`, { method: 'DELETE' });
+            modal.hide();
+            loadAll();
+        } catch (err) {
+            modal.hide();
+            alert('Невозможно удалить: элемент используется в записях.');
+        }
+    };
+    modal.show();
+}
+
+// ---- Инициализация ----
+loadAll();
+</script>
+{% endblock %}
