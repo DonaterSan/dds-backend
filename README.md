@@ -20,6 +20,20 @@
 - SQLite
 - Bootstrap 5 (CDN)
 
+## Предварительные требования
+
+- **Python 3.10+** — [скачать с python.org](https://www.python.org/downloads/)
+- **pip** — обычно устанавливается вместе с Python
+- **Git** — [скачать с git-scm.com](https://git-scm.com/downloads)
+
+Проверить установку:
+
+```bash
+python3 --version   # или python --version на Windows
+pip3 --version       # или pip --version
+git --version
+```
+
 ## Запуск
 
 ### 1. Клонировать репозиторий
